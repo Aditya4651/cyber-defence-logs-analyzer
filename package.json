@@ -12,7 +12,9 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.98.0",
+    "@types/d3-geo": "^3.1.1",
     "canvas-confetti": "^1.9.3",
+    "d3-geo": "^3.1.1",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.16.1",
     "lucide-react": "^0.460.0",
@@ -20,6 +22,7 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.1",
     "react-router-dom": "^6.8.0",
+    "react-simple-maps": "^5.0.5",
     "recharts": "^2.10.0",
     "uuid": "^9.0.1",
     "zustand": "^5.0.15"

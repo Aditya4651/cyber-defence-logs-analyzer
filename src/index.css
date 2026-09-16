@@ -1,20 +1,98 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'JetBrains Mono', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: dark;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: #0a0a0a;
+  font-family: 'JetBrains Mono', monospace;
+  background: linear-gradient(135deg, #0B0F19 0%, #0a0a0a 100%);
   color: #ededed;
   overflow-x: hidden;
   font-size: 13px;
   line-height: 1.5;
   letter-spacing: -0.01em;
+}
+
+/* Cyberpunk neon effects */
+.neon-cyan {
+  color: #00F0FF;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.neon-magenta {
+  color: #FF003C;
+  text-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+}
+
+.glass-card {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.glow-magenta {
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+}
+
+/* Animated gradient border */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.gradient-border {
+  background: linear-gradient(90deg, #00F0FF, #FF003C, #00F0FF);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Slide-in animation for live feed */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Crosshair cursor for IP hover */
+.crosshair-cursor {
+  cursor: crosshair;
+}
+
+/* Scanning line animation */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scan-line {
+  animation: scan 2s linear infinite;
 }
 
 .font-mono, code, [data-mono] {

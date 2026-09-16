@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Terminal, RefreshCw, Download, Activity, Wifi, Settings } from 'lucide-react';
+import { Terminal, RefreshCw, Download, Activity, Wifi, Settings, Command } from 'lucide-react';
 import StatsCards from './components/StatsCards';
 import ThreatCharts from './components/ThreatCharts';
+import ThreatMap from './components/ThreatMap';
+import MITREMatrix from './components/MITREMatrix';
+import KillChainTimeline from './components/KillChainTimeline';
+import CommandPalette from './components/CommandPalette';
 import LogViewer from './components/LogViewer';
 import Logo from './components/Logo';
 import AuthScreen from './components/AuthScreen';
@@ -22,6 +26,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 600);
@@ -31,6 +36,19 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Cmd+K shortcut for command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const summary: ThreatSummary = useMemo(() => ({
@@ -139,6 +157,14 @@ function App() {
               </span>
             </div>
             <button
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#a3a3a3] hover:text-cyan-400 border border-[#262626] rounded hover:border-cyan-500/30 transition-colors"
+              title="Command Palette (⌘K)"
+            >
+              <Command className="w-3 h-3" />
+              <span className="hidden sm:inline">⌘K</span>
+            </button>
+            <button
               onClick={handleRefresh}
               className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#a3a3a3] hover:text-[#ededed] border border-[#262626] rounded hover:border-[#404040] transition-colors"
             >
@@ -220,7 +246,29 @@ function App() {
         ) : activeTab === 'dashboard' ? (
           <>
             <StatsCards summary={summary} />
-            <ThreatCharts logs={logs} />
+            
+            {/* Cyber Command Center - Unique Dashboard */}
+            <div className="grid grid-cols-12 gap-6">
+              {/* Global Threat Map - Full width */}
+              <div className="col-span-12">
+                <ThreatMap logs={logs} />
+              </div>
+
+              {/* MITRE ATT&CK Matrix */}
+              <div className="col-span-12 lg:col-span-8">
+                <MITREMatrix logs={logs} />
+              </div>
+
+              {/* Kill Chain Timeline */}
+              <div className="col-span-12 lg:col-span-4">
+                <KillChainTimeline logs={logs} />
+              </div>
+
+              {/* Original Charts - Still useful */}
+              <div className="col-span-12">
+                <ThreatCharts logs={logs} />
+              </div>
+            </div>
           </>
         ) : activeTab === 'logs' ? (
           <LogViewer logs={logs} />
@@ -282,6 +330,16 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(tab) => {
+          setActiveTab(tab as any);
+          setIsCommandPaletteOpen(false);
+        }}
+      />
       </div>
     </>
   );
