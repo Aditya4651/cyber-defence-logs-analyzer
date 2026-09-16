@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ComposableMap, Geographies, Geography, Marker, Line } from 'react-simple-maps';
 import { LogEntry } from '../types';
 
@@ -22,7 +22,7 @@ const countryCoords: Record<string, [number, number]> = {
   'IR': [53.6880, 32.4279],
 };
 
-export default function ThreatMap({ logs }: ThreatMapProps) {
+const ThreatMap = React.memo(function ThreatMap({ logs }: ThreatMapProps) {
   const [activeAttacks, setActiveAttacks] = useState<Array<{
     id: string;
     from: [number, number];
@@ -31,7 +31,18 @@ export default function ThreatMap({ logs }: ThreatMapProps) {
     timestamp: number;
   }>>([]);
 
-  // Simulate live attacks
+  // Memoize severity color function
+  const getSeverityColor = useMemo(() => (severity: string) => {
+    switch (severity) {
+      case 'critical': return '#FF003C';
+      case 'high': return '#FF6B00';
+      case 'medium': return '#FFB800';
+      case 'low': return '#00F0FF';
+      default: return '#6B7280';
+    }
+  }, []);
+
+  // Simulate live attacks - throttled to 3 seconds for better performance
   useEffect(() => {
     const interval = setInterval(() => {
       if (logs.length === 0) return;
@@ -49,7 +60,7 @@ export default function ThreatMap({ logs }: ThreatMapProps) {
       };
 
       setActiveAttacks(prev => [...prev.slice(-9), newAttack]); // Keep last 10
-    }, 2000);
+    }, 3000); // Increased from 2000 to 3000ms for better performance
 
     return () => clearInterval(interval);
   }, [logs]);
@@ -63,16 +74,6 @@ export default function ThreatMap({ logs }: ThreatMapProps) {
 
     return () => clearInterval(cleanup);
   }, []);
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return '#FF003C';
-      case 'high': return '#FF6B00';
-      case 'medium': return '#FFB800';
-      case 'low': return '#00F0FF';
-      default: return '#6B7280';
-    }
-  };
 
   return (
     <div className="glass-card rounded-lg p-6 relative overflow-hidden">
@@ -186,4 +187,6 @@ export default function ThreatMap({ logs }: ThreatMapProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ThreatMap;

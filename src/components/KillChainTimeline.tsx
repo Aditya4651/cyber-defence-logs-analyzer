@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { LogEntry } from '../types';
 
 interface KillChainTimelineProps {
@@ -30,7 +30,7 @@ const attackToStage: Record<string, string> = {
   'Privilege Escalation': 'install',
 };
 
-export default function KillChainTimeline({ logs }: KillChainTimelineProps) {
+const KillChainTimeline = React.memo(function KillChainTimeline({ logs }: KillChainTimelineProps) {
   const stageData = useMemo(() => {
     const counts: Record<string, number> = {};
     
@@ -165,4 +165,6 @@ export default function KillChainTimeline({ logs }: KillChainTimelineProps) {
       </div>
     </div>
   );
-}
+});
+
+export default KillChainTimeline;

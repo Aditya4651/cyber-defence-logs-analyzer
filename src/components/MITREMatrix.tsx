@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { LogEntry } from '../types';
 
 interface MITREMatrixProps {
@@ -54,7 +54,7 @@ const attackTypeToTechnique: Record<string, { tactic: string; technique: string 
   'Privilege Escalation': { tactic: 'Privilege Escalation', technique: 'Abuse Elevation Control' },
 };
 
-export default function MITREMatrix({ logs }: MITREMatrixProps) {
+const MITREMatrix = React.memo(function MITREMatrix({ logs }: MITREMatrixProps) {
   const heatmapData = useMemo(() => {
     const counts: Record<string, Record<string, number>> = {};
 
@@ -189,4 +189,6 @@ export default function MITREMatrix({ logs }: MITREMatrixProps) {
       </div>
     </div>
   );
-}
+});
+
+export default MITREMatrix;

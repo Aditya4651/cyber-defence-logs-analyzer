@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts';
-import { Download } from 'lucide-react';
+import { Download, Radio, Shield } from 'lucide-react';
 import { LogEntry } from '../types';
 
 interface ThreatChartsProps {
@@ -27,7 +27,7 @@ const tooltipStyle = {
   fontFamily: 'JetBrains Mono, monospace',
 };
 
-export default function ThreatCharts({ logs }: ThreatChartsProps) {
+const ThreatCharts = React.memo(function ThreatCharts({ logs }: ThreatChartsProps) {
   const attackChartData = useMemo(() => {
     const data = logs.reduce((acc, log) => {
       acc[log.attackType] = (acc[log.attackType] || 0) + 1;
@@ -264,15 +264,12 @@ export default function ThreatCharts({ logs }: ThreatChartsProps) {
       </div>
     </div>
   );
-}
+});
 
 // Inline LiveFeedPanel with empty state
-import { useEffect, useRef, useState as useStateReact } from 'react';
-import { Radio, Shield } from 'lucide-react';
-
 function LiveFeedPanel({ logs }: { logs: LogEntry[] }) {
-  const [visibleLogs, setVisibleLogs] = useStateReact<LogEntry[]>(() => logs.slice(0, 10));
-  const [flashId, setFlashId] = useStateReact<string | null>(null);
+  const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>(() => logs.slice(0, 10));
+  const [flashId, setFlashId] = useState<string | null>(null);
   const counterRef = useRef(0);
 
   useEffect(() => {
@@ -337,3 +334,5 @@ function LiveFeedPanel({ logs }: { logs: LogEntry[] }) {
     </div>
   );
 }
+
+export default ThreatCharts;

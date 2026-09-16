@@ -1,10 +1,11 @@
+import React from 'react';
 import { ThreatSummary } from '../types';
 
 interface StatsCardsProps {
   summary: ThreatSummary;
 }
 
-export default function StatsCards({ summary }: StatsCardsProps) {
+const StatsCards = React.memo(function StatsCards({ summary }: StatsCardsProps) {
   const cards = [
     { label: 'Total Events', value: summary.total },
     { label: 'Critical', value: summary.critical, accent: true },
@@ -33,4 +34,6 @@ export default function StatsCards({ summary }: StatsCardsProps) {
       ))}
     </div>
   );
-}
+});
+
+export default StatsCards;

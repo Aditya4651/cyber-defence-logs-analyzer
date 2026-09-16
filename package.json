@@ -12,6 +12,7 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.98.0",
+    "@tanstack/react-virtual": "^3.14.13",
     "@types/d3-geo": "^3.1.1",
     "canvas-confetti": "^1.9.3",
     "d3-geo": "^3.1.1",

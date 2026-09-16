@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Fragment, useMemo } from 'react';
 import { Search, X, ChevronDown, ChevronUp, AlertCircle, Copy, ExternalLink, Eye, Ban } from 'lucide-react';
 import { LogEntry, Severity, AttackType, LogStatus } from '../types';
+import { useDebounce } from '../hooks/usePerformance';
 
 interface LogViewerProps {
   logs: LogEntry[];
@@ -27,7 +28,7 @@ interface ContextMenuState {
   log: LogEntry;
 }
 
-export default function LogViewer({ logs }: LogViewerProps) {
+const LogViewer = React.memo(function LogViewer({ logs }: LogViewerProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
   const [attackFilter, setAttackFilter] = useState<AttackType | 'all'>('all');
@@ -44,6 +45,9 @@ export default function LogViewer({ logs }: LogViewerProps) {
   const pageSize = 25;
   const searchRef = useRef<HTMLInputElement>(null);
   const resizingRef = useRef<{ col: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
+
+  // Debounce search term for performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -84,28 +88,35 @@ export default function LogViewer({ logs }: LogViewerProps) {
     window.addEventListener('mouseup', handleUp);
   }, [columnWidths]);
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch = searchTerm === '' ||
-      log.sourceIP.includes(searchTerm) ||
-      log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.attackType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.signature.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSeverity = severityFilter === 'all' || log.severity === severityFilter;
-    const matchesAttack = attackFilter === 'all' || log.attackType === attackFilter;
-    const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
-    return matchesSearch && matchesSeverity && matchesAttack && matchesStatus;
-  });
+  // Memoized filtering with debounced search
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = debouncedSearchTerm === '' ||
+        log.sourceIP.includes(debouncedSearchTerm) ||
+        log.description.toLowerCase().includes(searchLower) ||
+        log.attackType.toLowerCase().includes(searchLower) ||
+        log.id.toLowerCase().includes(searchLower) ||
+        log.signature.toLowerCase().includes(searchLower);
+      const matchesSeverity = severityFilter === 'all' || log.severity === severityFilter;
+      const matchesAttack = attackFilter === 'all' || log.attackType === attackFilter;
+      const matchesStatus = statusFilter === 'all' || log.status === statusFilter;
+      return matchesSearch && matchesSeverity && matchesAttack && matchesStatus;
+    });
+  }, [logs, debouncedSearchTerm, severityFilter, attackFilter, statusFilter]);
 
-  const sortedLogs = [...filteredLogs].sort((a, b) => {
-    if (sortField === 'timestamp') {
-      const diff = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+  // Memoized sorting
+  const sortedLogs = useMemo(() => {
+    return [...filteredLogs].sort((a, b) => {
+      if (sortField === 'timestamp') {
+        const diff = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        return sortDir === 'asc' ? diff : -diff;
+      }
+      const severityOrder = { critical: 5, high: 4, medium: 3, low: 2, info: 1 };
+      const diff = severityOrder[a.severity] - severityOrder[b.severity];
       return sortDir === 'asc' ? diff : -diff;
-    }
-    const severityOrder = { critical: 5, high: 4, medium: 3, low: 2, info: 1 };
-    const diff = severityOrder[a.severity] - severityOrder[b.severity];
-    return sortDir === 'asc' ? diff : -diff;
-  });
+    });
+  }, [filteredLogs, sortField, sortDir]);
 
   const totalPages = Math.ceil(sortedLogs.length / pageSize);
   const paginatedLogs = sortedLogs.slice((page - 1) * pageSize, page * pageSize);
@@ -408,4 +419,6 @@ export default function LogViewer({ logs }: LogViewerProps) {
       )}
     </div>
   );
-}
+});
+
+export default LogViewer;
