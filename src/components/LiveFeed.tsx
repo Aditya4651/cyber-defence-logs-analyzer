@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { LogEntry } from '../types';
 import { Radio } from 'lucide-react';
 
@@ -15,16 +15,24 @@ const severityDot: Record<string, string> = {
 };
 
 export default function LiveFeed({ logs }: LiveFeedProps) {
-  const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>(logs.slice(0, 8));
-  const [flash, setFlash] = useState<string | null>(null);
+  const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>(() => logs.slice(0, 8));
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const counterRef = useRef(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const randomIdx = Math.floor(Math.random() * logs.length);
-      const newLog = logs[randomIdx];
-      setVisibleLogs(prev => [newLog, ...prev.slice(0, 7)]);
-      setFlash(newLog.id);
-      setTimeout(() => setFlash(null), 1000);
+      const newLog = { ...logs[randomIdx] };
+      counterRef.current += 1;
+      // Use a counter-based unique id to avoid Math.random() in keys
+      const uniqueId = `${newLog.id}-${counterRef.current}`;
+      
+      setVisibleLogs(prev => {
+        const updated = [{ ...newLog, id: uniqueId } as LogEntry, ...prev.slice(0, 7)];
+        return updated;
+      });
+      setFlashId(uniqueId);
+      setTimeout(() => setFlashId(null), 1000);
     }, 3000);
 
     return () => clearInterval(interval);
@@ -50,9 +58,9 @@ export default function LiveFeed({ logs }: LiveFeedProps) {
       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
         {visibleLogs.map((log) => (
           <div
-            key={log.id + Math.random()}
+            key={log.id}
             className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-500 ${
-              flash === log.id
+              flashId === log.id
                 ? 'bg-cyan-500/10 border-cyan-500/30 scale-[1.02]'
                 : 'bg-gray-800/30 border-gray-800/50 hover:bg-gray-800/50'
             }`}
@@ -60,7 +68,7 @@ export default function LiveFeed({ logs }: LiveFeedProps) {
             <div className={`w-2 h-2 rounded-full mt-1.5 shadow-lg ${severityDot[log.severity]}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs font-mono text-cyan-400">{log.id}</span>
+                <span className="text-xs font-mono text-cyan-400">{log.id.split('-')[0]}-{log.id.split('-')[1]}</span>
                 <span className="text-xs text-gray-500">{formatTime(log.timestamp)}</span>
               </div>
               <p className="text-xs text-gray-300 truncate">{log.description}</p>

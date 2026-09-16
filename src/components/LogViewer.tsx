@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Filter, ChevronDown, ChevronUp, AlertCircle, ExternalLink } from 'lucide-react';
+import { useState, Fragment } from 'react';
+import { Search, Filter, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { LogEntry, Severity, AttackType, LogStatus } from '../types';
 
 interface LogViewerProps {
@@ -95,7 +95,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
               <select
                 value={severityFilter}
-                onChange={(e) => { setSeverityFilter(e.target.value as any); setPage(1); }}
+                onChange={(e) => { setSeverityFilter(e.target.value as Severity | 'all'); setPage(1); }}
                 className="pl-8 pr-8 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 appearance-none cursor-pointer"
               >
                 <option value="all">All Severity</option>
@@ -108,7 +108,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
             </div>
             <select
               value={attackFilter}
-              onChange={(e) => { setAttackFilter(e.target.value as any); setPage(1); }}
+              onChange={(e) => { setAttackFilter(e.target.value as AttackType | 'all'); setPage(1); }}
               className="px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 appearance-none cursor-pointer"
             >
               <option value="all">All Types</option>
@@ -118,7 +118,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
             </select>
             <select
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value as any); setPage(1); }}
+              onChange={(e) => { setStatusFilter(e.target.value as LogStatus | 'all'); setPage(1); }}
               className="px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 appearance-none cursor-pointer"
             >
               <option value="all">All Status</option>
@@ -168,9 +168,8 @@ export default function LogViewer({ logs }: LogViewerProps) {
           </thead>
           <tbody>
             {paginatedLogs.map((log) => (
-              <>
+              <Fragment key={log.id}>
                 <tr
-                  key={log.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
                   onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
                 >
@@ -206,7 +205,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
                   </td>
                 </tr>
                 {expandedRow === log.id && (
-                  <tr key={`${log.id}-detail`} className="bg-gray-800/20">
+                  <tr className="bg-gray-800/20">
                     <td colSpan={9} className="px-4 py-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                         <div>
@@ -233,7 +232,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
