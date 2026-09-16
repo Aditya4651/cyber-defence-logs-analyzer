@@ -1,15 +1,22 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Terminal, RefreshCw, Download, Activity, Wifi } from 'lucide-react';
+import { Terminal, RefreshCw, Download, Activity, Wifi, Settings } from 'lucide-react';
 import StatsCards from './components/StatsCards';
 import ThreatCharts from './components/ThreatCharts';
 import LogViewer from './components/LogViewer';
 import Logo from './components/Logo';
+import AuthScreen from './components/AuthScreen';
+import AlertRules from './components/AlertRules';
+import SavedSearches from './components/SavedSearches';
+import ServiceStatus from './components/ServiceStatus';
 import { generateLogs } from './data/sampleLogs';
 import { ThreatSummary } from './types';
+import { useAppStore } from './store/appStore';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
+  const { isAuthenticated, user, logout } = useAppStore();
   const [logs, setLogs] = useState(() => generateLogs(200));
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'logs'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'logs' | 'settings'>('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
@@ -57,10 +64,22 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Show auth screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Toaster position="top-right" />
+        <AuthScreen />
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
-      {/* Header */}
-      <header className="border-b border-[#262626] bg-[#0a0a0a] sticky top-0 z-50">
+    <>
+      <Toaster position="top-right" />
+      <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
+        {/* Header */}
+        <header className="border-b border-[#262626] bg-[#0a0a0a] sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-6 h-12 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2.5">
@@ -90,6 +109,15 @@ function App() {
               >
                 <Activity className="w-3 h-3" />
                 Log Explorer
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`h-full px-1 text-[12px] flex items-center gap-1.5 transition-colors relative ${
+                  activeTab === 'settings' ? 'tab-active text-[#ededed]' : 'text-[#525252] hover:text-[#a3a3a3]'
+                }`}
+              >
+                <Settings className="w-3 h-3" />
+                Settings
               </button>
             </nav>
           </div>
@@ -144,6 +172,14 @@ function App() {
         >
           Log Explorer
         </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`py-2 text-[12px] relative ${
+            activeTab === 'settings' ? 'tab-active text-[#ededed]' : 'text-[#525252]'
+          }`}
+        >
+          Settings
+        </button>
       </div>
 
       {/* Main Content */}
@@ -184,8 +220,47 @@ function App() {
             <StatsCards summary={summary} />
             <ThreatCharts logs={logs} />
           </>
-        ) : (
+        ) : activeTab === 'logs' ? (
           <LogViewer logs={logs} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <AlertRules />
+              <SavedSearches />
+            </div>
+            <div className="space-y-6">
+              <ServiceStatus />
+              <div className="card p-6">
+                <h2 className="text-lg font-semibold text-[#ededed] mb-4">Account</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2 border-b border-[#262626]">
+                    <span className="text-[11px] text-[#525252] uppercase tracking-wider">Email</span>
+                    <span className="text-sm text-[#ededed] font-mono">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-[#262626]">
+                    <span className="text-[11px] text-[#525252] uppercase tracking-wider">Name</span>
+                    <span className="text-sm text-[#ededed]">{user?.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-[#262626]">
+                    <span className="text-[11px] text-[#525252] uppercase tracking-wider">Role</span>
+                    <span className="text-sm text-[#ededed] capitalize">{user?.role}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[11px] text-[#525252] uppercase tracking-wider">Member since</span>
+                    <span className="text-sm text-[#ededed] font-mono">
+                      {new Date(user?.createdAt || '').toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  className="w-full mt-6 py-2 border border-[#262626] text-[#a3a3a3] rounded text-xs hover:bg-[#1a1a1a] hover:text-[#ededed] transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
 
@@ -203,7 +278,8 @@ function App() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 
