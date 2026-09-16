@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle, Ban, Eye, Activity, Zap } from 'lucide-react';
+import { Shield, AlertTriangle, Ban, Activity, Eye, Zap } from 'lucide-react';
 import { ThreatSummary } from '../types';
 
 interface StatsCardsProps {
@@ -8,78 +8,66 @@ interface StatsCardsProps {
 export default function StatsCards({ summary }: StatsCardsProps) {
   const cards = [
     {
-      title: 'Total Threats',
+      title: 'Total Events',
       value: summary.total,
       icon: Shield,
-      color: 'from-blue-500/20 to-blue-600/10',
-      borderColor: 'border-blue-500/30',
-      textColor: 'text-blue-400',
-      iconBg: 'bg-blue-500/20'
+      highlight: false,
     },
     {
       title: 'Critical',
       value: summary.critical,
       icon: AlertTriangle,
-      color: 'from-red-500/20 to-red-600/10',
-      borderColor: 'border-red-500/30',
-      textColor: 'text-red-400',
-      iconBg: 'bg-red-500/20'
+      highlight: true,
+    },
+    {
+      title: 'High',
+      value: summary.high,
+      icon: Zap,
+      highlight: summary.high > 0,
     },
     {
       title: 'Blocked',
       value: summary.blocked,
       icon: Ban,
-      color: 'from-green-500/20 to-green-600/10',
-      borderColor: 'border-green-500/30',
-      textColor: 'text-green-400',
-      iconBg: 'bg-green-500/20'
+      highlight: false,
     },
     {
       title: 'Active Threats',
       value: summary.active,
       icon: Activity,
-      color: 'from-orange-500/20 to-orange-600/10',
-      borderColor: 'border-orange-500/30',
-      textColor: 'text-orange-400',
-      iconBg: 'bg-orange-500/20'
+      highlight: summary.active > 0,
     },
     {
       title: 'Investigating',
       value: summary.total - summary.blocked - summary.active,
       icon: Eye,
-      color: 'from-purple-500/20 to-purple-600/10',
-      borderColor: 'border-purple-500/30',
-      textColor: 'text-purple-400',
-      iconBg: 'bg-purple-500/20'
+      highlight: false,
     },
-    {
-      title: 'High Severity',
-      value: summary.high,
-      icon: Zap,
-      color: 'from-yellow-500/20 to-yellow-600/10',
-      borderColor: 'border-yellow-500/30',
-      textColor: 'text-yellow-400',
-      iconBg: 'bg-yellow-500/20'
-    }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map((card) => (
         <div
           key={card.title}
-          className={`relative overflow-hidden rounded-xl border ${card.borderColor} bg-gradient-to-br ${card.color} backdrop-blur-sm p-4 transition-all hover:scale-105 hover:shadow-lg hover:shadow-black/20`}
+          className="relative bg-[#14161a] border border-[#22252b] rounded-lg p-4 transition-colors hover:border-[#2d3039]"
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className={`p-2 rounded-lg ${card.iconBg}`}>
-              <card.icon className={`w-4 h-4 ${card.textColor}`} />
-            </div>
+          <div className="flex items-center gap-2 mb-3">
+            <card.icon className="w-3.5 h-3.5 text-gray-600" />
+            <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+              {card.title}
+            </span>
           </div>
-          <div className={`text-2xl font-bold ${card.textColor}`}>{card.value}</div>
-          <div className="text-xs text-gray-400 mt-1">{card.title}</div>
-          <div className="absolute -right-2 -bottom-2 opacity-5">
-            <card.icon className="w-16 h-16" />
+          <div
+            className={`text-[28px] font-semibold leading-none ${
+              card.highlight ? 'text-red-500' : 'text-gray-100'
+            }`}
+          >
+            {card.value.toLocaleString()}
           </div>
+          {card.highlight && (
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-red-500/60 rounded-t-lg"></div>
+          )}
         </div>
       ))}
     </div>
