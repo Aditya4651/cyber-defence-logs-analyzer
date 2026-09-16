@@ -6,19 +6,19 @@ interface LogViewerProps {
   logs: LogEntry[];
 }
 
-const severityColors: Record<Severity, string> = {
-  critical: 'text-amber-500',
-  high: 'text-orange-500',
-  medium: 'text-gray-300',
-  low: 'text-gray-500',
-  info: 'text-gray-600',
+const statusConfig: Record<LogStatus, { color: string; label: string }> = {
+  active: { color: 'bg-red-500', label: 'Active' },
+  blocked: { color: 'bg-[#525252]', label: 'Blocked' },
+  investigating: { color: 'bg-amber-500', label: 'Investigating' },
+  resolved: { color: 'bg-green-500', label: 'Resolved' },
 };
 
-const statusColors: Record<LogStatus, string> = {
-  active: 'text-red-400',
-  blocked: 'text-gray-400',
-  investigating: 'text-amber-400',
-  resolved: 'text-gray-600',
+const severityConfig: Record<Severity, { color: string; label: string }> = {
+  critical: { color: 'text-amber-500', label: 'CRIT' },
+  high: { color: 'text-[#ededed]', label: 'HIGH' },
+  medium: { color: 'text-[#a3a3a3]', label: 'MED' },
+  low: { color: 'text-[#525252]', label: 'LOW' },
+  info: { color: 'text-[#404040]', label: 'INFO' },
 };
 
 interface ContextMenuState {
@@ -38,23 +38,16 @@ export default function LogViewer({ logs }: LogViewerProps) {
   const [page, setPage] = useState(1);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [columnWidths, setColumnWidths] = useState({
-    id: 90,
-    timestamp: 130,
-    sourceIP: 140,
-    attackType: 130,
-    severity: 80,
-    status: 90,
-    country: 50,
-    firewall: 90,
+    id: 90, timestamp: 130, sourceIP: 140, attackType: 130,
+    severity: 70, status: 90, country: 50, firewall: 90,
   });
   const pageSize = 25;
   const searchRef = useRef<HTMLInputElement>(null);
   const resizingRef = useRef<{ col: keyof typeof columnWidths; startX: number; startWidth: number } | null>(null);
 
-  // Keyboard shortcut: / to focus search
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'SELECT') {
+      if ((e.key === '/' || (e.metaKey && e.key === 'k')) && document.activeElement?.tagName !== 'INPUT') {
         e.preventDefault();
         searchRef.current?.focus();
       }
@@ -67,31 +60,26 @@ export default function LogViewer({ logs }: LogViewerProps) {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Close context menu on click outside
   useEffect(() => {
     const handler = () => setContextMenu(null);
     window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, []);
 
-  // Column resize handlers
   const handleResizeStart = useCallback((col: keyof typeof columnWidths, e: React.MouseEvent) => {
     e.preventDefault();
     resizingRef.current = { col, startX: e.clientX, startWidth: columnWidths[col] };
-
     const handleMove = (ev: MouseEvent) => {
       if (!resizingRef.current) return;
       const diff = ev.clientX - resizingRef.current.startX;
       const newWidth = Math.max(40, resizingRef.current.startWidth + diff);
       setColumnWidths(prev => ({ ...prev, [resizingRef.current!.col]: newWidth }));
     };
-
     const handleUp = () => {
       resizingRef.current = null;
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
     };
-
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
   }, [columnWidths]);
@@ -123,12 +111,8 @@ export default function LogViewer({ logs }: LogViewerProps) {
   const paginatedLogs = sortedLogs.slice((page - 1) * pageSize, page * pageSize);
 
   const toggleSort = (field: 'timestamp' | 'severity') => {
-    if (sortField === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDir('desc');
-    }
+    if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('desc'); }
   };
 
   const formatTime = (iso: string) => {
@@ -159,49 +143,43 @@ export default function LogViewer({ logs }: LogViewerProps) {
     severityFilter !== 'all' && { label: `Severity: ${severityFilter}`, onRemove: () => setSeverityFilter('all') },
     attackFilter !== 'all' && { label: `Type: ${attackFilter}`, onRemove: () => setAttackFilter('all') },
     statusFilter !== 'all' && { label: `Status: ${statusFilter}`, onRemove: () => setStatusFilter('all') },
-    searchTerm && { label: `Search: "${searchTerm}"`, onRemove: () => setSearchTerm('') },
+    searchTerm && { label: `"${searchTerm}"`, onRemove: () => setSearchTerm('') },
   ].filter(Boolean) as { label: string; onRemove: () => void }[];
 
   const ColHeader = ({ label, width, sortKey, col }: { label: string; width: number; sortKey?: 'timestamp' | 'severity'; col: keyof typeof columnWidths }) => (
-    <th
-      className="relative px-2 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider select-none"
-      style={{ width, minWidth: width }}
-    >
+    <th className="relative px-3 py-2 text-left chart-label select-none" style={{ width, minWidth: width }}>
       <span
-        className={sortKey ? 'cursor-pointer hover:text-gray-300 flex items-center gap-1' : ''}
+        className={sortKey ? 'cursor-pointer hover:text-[#ededed] flex items-center gap-1' : ''}
         onClick={() => sortKey && toggleSort(sortKey)}
       >
         {label}
         {sortKey && sortField === sortKey && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
       </span>
-      <div
-        className="resize-handle"
-        onMouseDown={(e) => handleResizeStart(col, e)}
-      />
+      <div className="resize-handle" onMouseDown={(e) => handleResizeStart(col, e)} />
     </th>
   );
 
   return (
-    <div className="bg-[#0f1013] border border-[#22252b] rounded-lg overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Filters */}
-      <div className="px-3 py-2 border-b border-[#22252b] flex flex-col gap-2">
+      <div className="px-4 py-3 border-b border-[#262626]">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252]" />
             <input
               ref={searchRef}
               type="text"
-              placeholder="Search logs... (press /)"
+              placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-              className="w-full pl-8 pr-12 py-1.5 bg-[#14161a] border border-[#22252b] rounded text-[12px] text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500/40 transition-colors"
+              className="w-full pl-9 pr-14 py-1.5 bg-[#0a0a0a] border border-[#262626] rounded text-[12px] text-[#ededed] placeholder-[#525252] focus:outline-none focus:border-[#404040] transition-colors font-mono"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2">/</kbd>
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2">⌘K</kbd>
           </div>
           <select
             value={severityFilter}
             onChange={(e) => { setSeverityFilter(e.target.value as Severity | 'all'); setPage(1); }}
-            className="px-2 py-1.5 bg-[#14161a] border border-[#22252b] rounded text-[12px] text-gray-300 focus:outline-none focus:border-amber-500/40 cursor-pointer"
+            className="px-2 py-1.5 bg-[#0a0a0a] border border-[#262626] rounded text-[12px] text-[#a3a3a3] focus:outline-none focus:border-[#404040] cursor-pointer"
           >
             <option value="all">All Severity</option>
             <option value="critical">Critical</option>
@@ -213,7 +191,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
           <select
             value={attackFilter}
             onChange={(e) => { setAttackFilter(e.target.value as AttackType | 'all'); setPage(1); }}
-            className="px-2 py-1.5 bg-[#14161a] border border-[#22252b] rounded text-[12px] text-gray-300 focus:outline-none focus:border-amber-500/40 cursor-pointer"
+            className="px-2 py-1.5 bg-[#0a0a0a] border border-[#262626] rounded text-[12px] text-[#a3a3a3] focus:outline-none focus:border-[#404040] cursor-pointer"
           >
             <option value="all">All Types</option>
             {(['DDoS', 'SQL Injection', 'XSS', 'Brute Force', 'Port Scan', 'Malware', 'Phishing', 'Unauthorized Access', 'Data Exfiltration', 'Privilege Escalation'] as AttackType[]).map(t => (
@@ -223,7 +201,7 @@ export default function LogViewer({ logs }: LogViewerProps) {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value as LogStatus | 'all'); setPage(1); }}
-            className="px-2 py-1.5 bg-[#14161a] border border-[#22252b] rounded text-[12px] text-gray-300 focus:outline-none focus:border-amber-500/40 cursor-pointer"
+            className="px-2 py-1.5 bg-[#0a0a0a] border border-[#262626] rounded text-[12px] text-[#a3a3a3] focus:outline-none focus:border-[#404040] cursor-pointer"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -233,45 +211,37 @@ export default function LogViewer({ logs }: LogViewerProps) {
           </select>
         </div>
 
-        {/* Active filter chips */}
         {activeFilters.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-gray-600 uppercase tracking-wider">Filters:</span>
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            <span className="text-[10px] text-[#525252] uppercase tracking-wider">Filters:</span>
             {activeFilters.map((f, i) => (
-              <span
-                key={i}
-                className="filter-chip inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[11px] text-amber-400"
-              >
+              <span key={i} className="filter-chip inline-flex items-center gap-1 px-2 py-0.5 bg-[#1a1a1a] border border-[#262626] rounded text-[11px] text-[#a3a3a3]">
                 {f.label}
-                <button onClick={f.onRemove} className="hover:text-amber-200">
+                <button onClick={f.onRemove} className="hover:text-[#ededed]">
                   <X className="w-3 h-3" />
                 </button>
               </span>
             ))}
             <button
               onClick={() => { setSeverityFilter('all'); setAttackFilter('all'); setStatusFilter('all'); setSearchTerm(''); }}
-              className="text-[11px] text-gray-500 hover:text-gray-300 ml-1"
+              className="text-[11px] text-[#525252] hover:text-[#a3a3a3] ml-1"
             >
               Clear all
             </button>
           </div>
         )}
-
-        <div className="text-[11px] text-gray-600">
-          {filteredLogs.length} result{filteredLogs.length !== 1 ? 's' : ''}
-        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-auto max-h-[600px]">
         <table className="w-full sticky-header" style={{ minWidth: 820 }}>
           <thead>
-            <tr className="border-b border-[#22252b]">
+            <tr className="border-b border-[#262626]">
               <ColHeader label="ID" width={columnWidths.id} col="id" />
               <ColHeader label="Timestamp" width={columnWidths.timestamp} sortKey="timestamp" col="timestamp" />
               <ColHeader label="Source" width={columnWidths.sourceIP} col="sourceIP" />
               <ColHeader label="Attack" width={columnWidths.attackType} col="attackType" />
-              <ColHeader label="Severity" width={columnWidths.severity} sortKey="severity" col="severity" />
+              <ColHeader label="Sev" width={columnWidths.severity} sortKey="severity" col="severity" />
               <ColHeader label="Status" width={columnWidths.status} col="status" />
               <ColHeader label="CC" width={columnWidths.country} col="country" />
               <ColHeader label="Firewall" width={columnWidths.firewall} col="firewall" />
@@ -281,65 +251,66 @@ export default function LogViewer({ logs }: LogViewerProps) {
             {paginatedLogs.map((log) => (
               <Fragment key={log.id}>
                 <tr
-                  className="log-row border-b border-[#1a1d23] cursor-pointer"
+                  className="log-row border-b border-[#1a1a1a] cursor-pointer group"
                   onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
                   onContextMenu={(e) => handleContextMenu(e, log)}
                 >
-                  <td className="px-2 py-1.5 font-mono text-[11px] text-gray-500" style={{ width: columnWidths.id }}>
+                  <td className="px-3 py-1.5 font-mono text-[11px] text-[#525252]" style={{ width: columnWidths.id }}>
                     {log.id}
                   </td>
-                  <td className="px-2 py-1.5 font-mono text-[11px] text-gray-400" style={{ width: columnWidths.timestamp }}>
+                  <td className="px-3 py-1.5 font-mono text-[11px] text-[#a3a3a3]" style={{ width: columnWidths.timestamp }}>
                     {formatTime(log.timestamp)}
                   </td>
-                  <td className="px-2 py-1.5 font-mono text-[11px] text-gray-300" style={{ width: columnWidths.sourceIP }}>
+                  <td className="px-3 py-1.5 font-mono text-[11px] text-[#ededed]" style={{ width: columnWidths.sourceIP }}>
                     {log.sourceIP}
-                    <span className="text-gray-700 ml-0.5">:{log.sourcePort}</span>
+                    <span className="text-[#404040] ml-0.5">:{log.sourcePort}</span>
                   </td>
-                  <td className="px-2 py-1.5 text-[11px] text-gray-300" style={{ width: columnWidths.attackType }}>
+                  <td className="px-3 py-1.5 text-[11px] text-[#ededed]" style={{ width: columnWidths.attackType }}>
                     {log.attackType}
                   </td>
-                  <td className="px-2 py-1.5" style={{ width: columnWidths.severity }}>
-                    <span className={`text-[11px] font-medium uppercase ${severityColors[log.severity]}`}>
-                      {log.severity === 'critical' ? 'CRIT' : log.severity.slice(0, 4).toUpperCase()}
+                  <td className="px-3 py-1.5" style={{ width: columnWidths.severity }}>
+                    <span className={`text-[10px] font-mono font-medium ${severityConfig[log.severity].color}`}>
+                      {severityConfig[log.severity].label}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5" style={{ width: columnWidths.status }}>
-                    <span className={`text-[11px] ${statusColors[log.status]}`}>
-                      {log.status === 'investigating' ? 'INV' : log.status.slice(0, 3).toUpperCase()}
+                  <td className="px-3 py-1.5" style={{ width: columnWidths.status }}>
+                    <span className="inline-flex items-center text-[11px] text-[#a3a3a3]">
+                      <span className={`status-dot ${statusConfig[log.status].color}`}></span>
+                      {statusConfig[log.status].label}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 font-mono text-[11px] text-gray-500" style={{ width: columnWidths.country }}>
+                  <td className="px-3 py-1.5 font-mono text-[11px] text-[#525252]" style={{ width: columnWidths.country }}>
                     {log.country}
                   </td>
-                  <td className="px-2 py-1.5 text-[11px] text-gray-500" style={{ width: columnWidths.firewall }}>
+                  <td className="px-3 py-1.5 text-[11px] text-[#525252]" style={{ width: columnWidths.firewall }}>
                     {log.firewall}
                   </td>
                 </tr>
                 {expandedRow === log.id && (
-                  <tr className="bg-[#0c0d10]">
-                    <td colSpan={8} className="px-3 py-3">
+                  <tr className="bg-[#0f0f0f]">
+                    <td colSpan={8} className="px-4 py-3">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-[11px]">
                         <div>
-                          <span className="text-gray-600 block mb-0.5">Description</span>
-                          <span className="text-gray-300">{log.description}</span>
+                          <span className="text-[#525252] block mb-0.5 chart-label">Description</span>
+                          <span className="text-[#ededed]">{log.description}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600 block mb-0.5">Destination</span>
-                          <span className="text-gray-300 font-mono">{log.destinationIP}:{log.destinationPort} / {log.protocol}</span>
+                          <span className="text-[#525252] block mb-0.5 chart-label">Destination</span>
+                          <span className="text-[#ededed] font-mono">{log.destinationIP}:{log.destinationPort} / {log.protocol}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600 block mb-0.5">Signature</span>
-                          <span className="text-gray-400 font-mono">{log.signature}</span>
+                          <span className="text-[#525252] block mb-0.5 chart-label">Signature</span>
+                          <span className="text-[#a3a3a3] font-mono">{log.signature}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600 block mb-0.5">Log ID</span>
-                          <span className="text-gray-400 font-mono">{log.id}</span>
+                          <span className="text-[#525252] block mb-0.5 chart-label">Log ID</span>
+                          <span className="text-[#a3a3a3] font-mono">{log.id}</span>
                         </div>
                         <div className="col-span-2 md:col-span-4">
-                          <span className="text-gray-600 block mb-0.5 flex items-center gap-1">
+                          <span className="text-[#525252] block mb-0.5 chart-label flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" /> Payload
                           </span>
-                          <div className="bg-[#0a0b0d] border border-[#1a1d23] rounded px-2 py-1.5 font-mono text-[11px] text-amber-500/80 break-all">
+                          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded px-2 py-1.5 font-mono text-[11px] text-amber-500/80 break-all">
                             {log.payload}
                           </div>
                         </div>
@@ -354,22 +325,22 @@ export default function LogViewer({ logs }: LogViewerProps) {
       </div>
 
       {/* Pagination */}
-      <div className="px-3 py-2 border-t border-[#22252b] flex items-center justify-between text-[11px]">
-        <div className="text-gray-500">
-          Page {page} of {totalPages} · {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sortedLogs.length)} of {sortedLogs.length}
+      <div className="px-4 py-2 border-t border-[#262626] flex items-center justify-between text-[11px]">
+        <div className="text-[#525252] font-mono">
+          {filteredLogs.length} result{filteredLogs.length !== 1 ? 's' : ''} · Page {page} of {totalPages}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setPage(1)}
             disabled={page === 1}
-            className="px-2 py-1 text-gray-400 hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-[#525252] hover:text-[#ededed] disabled:opacity-30 disabled:cursor-not-allowed font-mono"
           >
             «
           </button>
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="px-2 py-1 text-gray-400 hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-[#525252] hover:text-[#ededed] disabled:opacity-30 disabled:cursor-not-allowed font-mono"
           >
             ‹
           </button>
@@ -383,10 +354,10 @@ export default function LogViewer({ logs }: LogViewerProps) {
               <button
                 key={pageNum}
                 onClick={() => setPage(pageNum)}
-                className={`w-6 h-6 rounded text-[11px] tabular-nums ${
+                className={`w-6 h-6 rounded text-[11px] font-mono tabular-nums ${
                   page === pageNum
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1d23]'
+                    ? 'bg-[#262626] text-[#ededed]'
+                    : 'text-[#525252] hover:text-[#ededed] hover:bg-[#1a1a1a]'
                 }`}
               >
                 {pageNum}
@@ -396,14 +367,14 @@ export default function LogViewer({ logs }: LogViewerProps) {
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
-            className="px-2 py-1 text-gray-400 hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-[#525252] hover:text-[#ededed] disabled:opacity-30 disabled:cursor-not-allowed font-mono"
           >
             ›
           </button>
           <button
             onClick={() => setPage(totalPages)}
             disabled={page === totalPages}
-            className="px-2 py-1 text-gray-400 hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-[#525252] hover:text-[#ededed] disabled:opacity-30 disabled:cursor-not-allowed font-mono"
           >
             »
           </button>
@@ -413,43 +384,24 @@ export default function LogViewer({ logs }: LogViewerProps) {
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="context-menu fixed z-50 bg-[#14161a] border border-[#2a2d35] rounded-md shadow-2xl py-1 min-w-[160px]"
+          className="context-menu fixed z-50 bg-[#141414] border border-[#262626] rounded-md shadow-2xl py-1 min-w-[160px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => handleCopyRow(contextMenu.log)}
-            className="w-full px-3 py-1.5 text-left text-[12px] text-gray-300 hover:bg-[#1a1d23] flex items-center gap-2"
-          >
+          <button onClick={() => handleCopyRow(contextMenu.log)} className="w-full px-3 py-1.5 text-left text-[12px] text-[#a3a3a3] hover:bg-[#1a1a1a] hover:text-[#ededed] flex items-center gap-2">
             <Copy className="w-3 h-3" /> Copy row
           </button>
-          <button
-            onClick={() => { setExpandedRow(contextMenu.log.id); setContextMenu(null); }}
-            className="w-full px-3 py-1.5 text-left text-[12px] text-gray-300 hover:bg-[#1a1d23] flex items-center gap-2"
-          >
+          <button onClick={() => { setExpandedRow(contextMenu.log.id); setContextMenu(null); }} className="w-full px-3 py-1.5 text-left text-[12px] text-[#a3a3a3] hover:bg-[#1a1a1a] hover:text-[#ededed] flex items-center gap-2">
             <Eye className="w-3 h-3" /> View details
           </button>
-          <button
-            onClick={() => handleBlockIP(contextMenu.log)}
-            className="w-full px-3 py-1.5 text-left text-[12px] text-gray-300 hover:bg-[#1a1d23] flex items-center gap-2"
-          >
+          <button onClick={() => handleBlockIP(contextMenu.log)} className="w-full px-3 py-1.5 text-left text-[12px] text-[#a3a3a3] hover:bg-[#1a1a1a] hover:text-[#ededed] flex items-center gap-2">
             <Ban className="w-3 h-3" /> Block IP
           </button>
-          <div className="border-t border-[#22252b] my-1"></div>
-          <button
-            onClick={() => {
-              setSearchTerm(contextMenu.log.sourceIP);
-              setPage(1);
-              setContextMenu(null);
-            }}
-            className="w-full px-3 py-1.5 text-left text-[12px] text-gray-300 hover:bg-[#1a1d23] flex items-center gap-2"
-          >
+          <div className="border-t border-[#1a1a1a] my-1"></div>
+          <button onClick={() => { setSearchTerm(contextMenu.log.sourceIP); setPage(1); setContextMenu(null); }} className="w-full px-3 py-1.5 text-left text-[12px] text-[#a3a3a3] hover:bg-[#1a1a1a] hover:text-[#ededed] flex items-center gap-2">
             <Search className="w-3 h-3" /> Filter by this IP
           </button>
-          <button
-            onClick={() => { setContextMenu(null); }}
-            className="w-full px-3 py-1.5 text-left text-[12px] text-gray-300 hover:bg-[#1a1d23] flex items-center gap-2"
-          >
+          <button onClick={() => setContextMenu(null)} className="w-full px-3 py-1.5 text-left text-[12px] text-[#a3a3a3] hover:bg-[#1a1a1a] hover:text-[#ededed] flex items-center gap-2">
             <ExternalLink className="w-3 h-3" /> Open in SIEM
           </button>
         </div>
