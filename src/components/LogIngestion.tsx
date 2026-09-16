@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useAppStore } from '../store/appStore';
-import { Upload, FileText, Clipboard, Code, Check, X } from 'lucide-react';
+import { Upload, FileText, Clipboard, Code, Check, X, ChevronDown, Shield, Network, Globe, Server, Database, Cloud, Monitor, Activity, Mail, Lock, Key, Zap, HardDrive, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getLogSourceTypeById, LOG_SOURCE_CATEGORIES } from '../data/logSourceTypes';
 
 export default function LogIngestion() {
   const { logSources, ingestLogs } = useAppStore();
@@ -123,18 +124,105 @@ export default function LogIngestion() {
         <label className="block text-[11px] text-[#a3a3a3] uppercase tracking-wider mb-1.5">
           Select Log Source
         </label>
-        <select
-          value={selectedSource}
-          onChange={(e) => setSelectedSource(e.target.value)}
-          className="w-full px-3 py-1.5 bg-[#0a0a0a] border border-[#262626] rounded text-sm text-[#ededed] focus:outline-none focus:border-[#404040]"
-        >
-          <option value="">Choose a source...</option>
-          {logSources.map(source => (
-            <option key={source.id} value={source.id}>
-              {source.name} ({source.type})
-            </option>
-          ))}
-        </select>
+        
+        {logSources.length === 0 ? (
+          <div className="p-4 bg-[#0a0a0a] border border-[#262626] rounded text-center">
+            <p className="text-xs text-gray-500 mb-2">No log sources configured</p>
+            <p className="text-[10px] text-gray-600">Create a log source in Settings to start ingesting logs</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2">
+            {LOG_SOURCE_CATEGORIES.map(category => {
+              const sourcesInCategory = logSources.filter(s => s.category === category.id);
+              if (sourcesInCategory.length === 0) return null;
+              
+              const CategoryIcon = category.icon;
+              
+              return (
+                <div key={category.id}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <CategoryIcon className="w-3 h-3" style={{ color: category.color }} />
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                      {category.name}
+                    </span>
+                    <span className="text-[9px] text-gray-600">({sourcesInCategory.length})</span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {sourcesInCategory.map(source => {
+                      const typeConfig = getLogSourceTypeById(source.type);
+                      const TypeIcon = typeConfig?.icon || Shield;
+                      const isSelected = selectedSource === source.id;
+                      
+                      return (
+                        <button
+                          key={source.id}
+                          onClick={() => setSelectedSource(source.id)}
+                          disabled={!source.enabled}
+                          className={`w-full p-2.5 rounded border transition-all text-left flex items-start gap-2.5 ${
+                            isSelected
+                              ? 'bg-cyan-500/10 border-cyan-500/30'
+                              : 'bg-[#0a0a0a] border-[#262626] hover:border-[#404040]'
+                          } ${!source.enabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <div
+                            className="p-1.5 rounded shrink-0"
+                            style={{ backgroundColor: `${typeConfig?.color || '#64748b'}20` }}
+                          >
+                            <TypeIcon className="w-3.5 h-3.5" style={{ color: typeConfig?.color || '#64748b' }} />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-xs text-white font-medium truncate">
+                                {source.name}
+                              </span>
+                              {!source.enabled && (
+                                <span className="text-[9px] px-1 py-0.5 rounded bg-gray-800 text-gray-500 uppercase">
+                                  Disabled
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                              <span className="truncate">{typeConfig?.name || source.type}</span>
+                              {source.config?.port && (
+                                <>
+                                  <span>·</span>
+                                  <span className="font-mono">:{source.config.port}</span>
+                                </>
+                              )}
+                              {source.config?.protocol && (
+                                <>
+                                  <span>·</span>
+                                  <span>{source.config.protocol}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {isSelected && (
+                            <div className="shrink-0">
+                              <Check className="w-4 h-4 text-cyan-400" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {selectedSource && (
+          <div className="mt-3 p-2 bg-cyan-500/5 border border-cyan-500/20 rounded flex items-center gap-2">
+            <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="text-[11px] text-cyan-400">
+              Selected: {logSources.find(s => s.id === selectedSource)?.name}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
