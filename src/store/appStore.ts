@@ -72,6 +72,8 @@ type LogSourceType =
   | 'email'
   | 'vpn'
   | 'authentication'
+  | 'container'
+  | 'antivirus'
   | 'custom';
 
 type LogSourceCategory =
@@ -274,8 +276,185 @@ export const useAppStore = create<AppState>()(
         }).length;
       },
 
-      // Log Sources
-      logSources: [],
+      // Log Sources - Pre-seeded with sample sources
+      logSources: [
+        {
+          id: 'source_fw_prod',
+          userId: 'demo_user',
+          name: 'Palo Alto - Production',
+          description: 'Main production firewall - US East',
+          type: 'firewall',
+          category: 'security',
+          apiKey: 'csk_fw_prod_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'fw-prod-us-east-01.example.com',
+            port: 514,
+            protocol: 'UDP/Syslog',
+            format: 'syslog'
+          },
+          stats: {
+            logsToday: 45230,
+            sizeToday: '128 MB',
+            lastIngest: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_ids_dmz',
+          userId: 'demo_user',
+          name: 'Suricata IDS - DMZ',
+          description: 'Intrusion detection system for DMZ network',
+          type: 'ids_ips',
+          category: 'security',
+          apiKey: 'csk_ids_dmz_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'ids-dmz-01.example.com',
+            port: 514,
+            protocol: 'UDP/Syslog',
+            format: 'eve-json'
+          },
+          stats: {
+            logsToday: 12847,
+            sizeToday: '45 MB',
+            lastIngest: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_nginx_prod',
+          userId: 'demo_user',
+          name: 'Nginx - Production API',
+          description: 'Main API gateway - all regions',
+          type: 'web_server',
+          category: 'application',
+          apiKey: 'csk_nginx_prod_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'api.example.com',
+            port: 443,
+            protocol: 'HTTPS',
+            format: 'combined'
+          },
+          stats: {
+            logsToday: 234567,
+            sizeToday: '1.2 GB',
+            lastIngest: new Date(Date.now() - 30 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_aws_cloudtrail',
+          userId: 'demo_user',
+          name: 'AWS CloudTrail - Production',
+          description: 'AWS API activity logs',
+          type: 'cloud',
+          category: 'cloud',
+          apiKey: 'csk_aws_ct_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'cloudtrail.s3.amazonaws.com',
+            port: 443,
+            protocol: 'HTTPS/JSON',
+            format: 'json'
+          },
+          stats: {
+            logsToday: 8923,
+            sizeToday: '67 MB',
+            lastIngest: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_auth_okta',
+          userId: 'demo_user',
+          name: 'Okta - SSO Authentication',
+          description: 'Single sign-on authentication logs',
+          type: 'authentication',
+          category: 'security',
+          apiKey: 'csk_okta_sso_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'company.okta.com',
+            port: 443,
+            protocol: 'HTTPS/JSON',
+            format: 'json'
+          },
+          stats: {
+            logsToday: 3421,
+            sizeToday: '12 MB',
+            lastIngest: new Date(Date.now() - 8 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_k8s_prod',
+          userId: 'demo_user',
+          name: 'Kubernetes - Production Cluster',
+          description: 'K8s cluster logs - all namespaces',
+          type: 'container',
+          category: 'infrastructure',
+          apiKey: 'csk_k8s_prod_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'k8s-prod.example.com:10250',
+            port: 10250,
+            protocol: 'HTTPS/JSON',
+            format: 'json'
+          },
+          stats: {
+            logsToday: 567890,
+            sizeToday: '2.3 GB',
+            lastIngest: new Date(Date.now() - 1 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_defender',
+          userId: 'demo_user',
+          name: 'Microsoft Defender - Endpoints',
+          description: 'Endpoint protection and EDR logs',
+          type: 'antivirus',
+          category: 'endpoint',
+          apiKey: 'csk_defender_' + Math.random().toString(36).substring(2, 15),
+          enabled: true,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'security.microsoft.com',
+            port: 443,
+            protocol: 'HTTPS/JSON',
+            format: 'json'
+          },
+          stats: {
+            logsToday: 15678,
+            sizeToday: '89 MB',
+            lastIngest: new Date(Date.now() - 12 * 60 * 1000).toISOString()
+          }
+        },
+        {
+          id: 'source_postgres',
+          userId: 'demo_user',
+          name: 'PostgreSQL - Production DB',
+          description: 'Database query and connection logs',
+          type: 'database',
+          category: 'application',
+          apiKey: 'csk_pg_prod_' + Math.random().toString(36).substring(2, 15),
+          enabled: false,
+          createdAt: '2024-01-10T10:00:00Z',
+          config: {
+            endpoint: 'db-prod.example.com',
+            port: 5432,
+            protocol: 'TCP',
+            format: 'syslog'
+          },
+          stats: {
+            logsToday: 0,
+            sizeToday: '0 B',
+            lastIngest: undefined
+          }
+        }
+      ],
 
       addLogSource: (source) => {
         const { user } = get();
