@@ -117,7 +117,9 @@ interface AppState {
   updateLogSource: (id: string, updates: Partial<LogSource>) => void;
 
   // Log Ingestion
+  realLogs: any[];
   ingestLogs: (logs: any[]) => void;
+  clearLogs: () => void;
   ingestionStats: { totalIngested: number; lastIngest?: string };
 
   // Rate Limiting
@@ -502,15 +504,21 @@ export const useAppStore = create<AppState>()(
       },
 
       // Log Ingestion
+      realLogs: [],
       ingestionStats: { totalIngested: 0 },
 
       ingestLogs: (logs) => {
         set(state => ({
+          realLogs: [...logs, ...state.realLogs].slice(0, 10000), // Keep last 10000 logs
           ingestionStats: {
             totalIngested: state.ingestionStats.totalIngested + logs.length,
             lastIngest: new Date().toISOString(),
           },
         }));
+      },
+
+      clearLogs: () => {
+        set({ realLogs: [], ingestionStats: { totalIngested: 0 } });
       },
 
       // Rate Limiting

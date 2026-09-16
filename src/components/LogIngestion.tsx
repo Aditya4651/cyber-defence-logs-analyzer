@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { Upload, FileText, Clipboard, Code, Check, X, ChevronDown, Shield, Network, Globe, Server, Database, Cloud, Monitor, Activity, Mail, Lock, Key, Zap, HardDrive, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getLogSourceTypeById, LOG_SOURCE_CATEGORIES } from '../data/logSourceTypes';
+import { parseLogFile } from '../utils/logParser';
 
 export default function LogIngestion() {
   const { logSources, ingestLogs } = useAppStore();
@@ -41,37 +42,28 @@ export default function LogIngestion() {
 
     setUploading(true);
     
-    // Simulate upload progress
-    for (let i = 0; i <= 100; i += 20) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      const file = files[0];
+      const text = await file.text();
+      
+      // Parse the file using the real log parser
+      const parsedLogs = parseLogFile(text);
+      
+      if (parsedLogs.length === 0) {
+        toast.error('No valid logs found in file. Please check the format.');
+        setUploading(false);
+        return;
+      }
+
+      // Ingest the parsed logs
+      ingestLogs(parsedLogs);
+      setUploading(false);
+      toast.success(`✅ Successfully ingested ${parsedLogs.length} logs from ${file.name}`);
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      toast.error('Error parsing file. Please check the format.');
+      setUploading(false);
     }
-
-    // Parse files and ingest
-    const file = files[0];
-    const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
-    
-    const logs = lines.map((line, idx) => ({
-      id: `LOG-UPLOAD-${Date.now()}-${idx}`,
-      timestamp: new Date().toISOString(),
-      sourceIP: '127.0.0.1',
-      destinationIP: '10.0.0.1',
-      sourcePort: Math.floor(Math.random() * 65535),
-      destinationPort: 80,
-      protocol: 'TCP',
-      attackType: 'Port Scan',
-      severity: 'medium' as const,
-      status: 'active' as const,
-      description: line.substring(0, 100),
-      payload: line,
-      country: 'US',
-      firewall: 'FW-Primary',
-      signature: `SIG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-    }));
-
-    ingestLogs(logs);
-    setUploading(false);
-    toast.success(`Ingested ${logs.length} logs from ${file.name}`);
   };
 
   const handlePaste = () => {
@@ -85,29 +77,23 @@ export default function LogIngestion() {
       return;
     }
 
-    const lines = pasteContent.split('\n').filter(line => line.trim());
-    
-    const logs = lines.map((line, idx) => ({
-      id: `LOG-PASTE-${Date.now()}-${idx}`,
-      timestamp: new Date().toISOString(),
-      sourceIP: '127.0.0.1',
-      destinationIP: '10.0.0.1',
-      sourcePort: Math.floor(Math.random() * 65535),
-      destinationPort: 80,
-      protocol: 'TCP',
-      attackType: 'Port Scan',
-      severity: 'medium' as const,
-      status: 'active' as const,
-      description: line.substring(0, 100),
-      payload: line,
-      country: 'US',
-      firewall: 'FW-Primary',
-      signature: `SIG-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-    }));
+    try {
+      // Parse the pasted content using the real log parser
+      const parsedLogs = parseLogFile(pasteContent);
+      
+      if (parsedLogs.length === 0) {
+        toast.error('No valid logs found. Please check the format.');
+        return;
+      }
 
-    ingestLogs(logs);
-    setPasteContent('');
-    toast.success(`Ingested ${logs.length} logs`);
+      // Ingest the parsed logs
+      ingestLogs(parsedLogs);
+      setPasteContent('');
+      toast.success(`✅ Successfully ingested ${parsedLogs.length} logs`);
+    } catch (error) {
+      console.error('Error parsing logs:', error);
+      toast.error('Error parsing logs. Please check the format.');
+    }
   };
 
   return (

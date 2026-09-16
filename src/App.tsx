@@ -14,19 +14,20 @@ import SavedSearches from './components/SavedSearches';
 import ServiceStatus from './components/ServiceStatus';
 import LogSources from './components/LogSources';
 import LogIngestion from './components/LogIngestion';
-import { generateLogs } from './data/sampleLogs';
 import { ThreatSummary } from './types';
 import { useAppStore } from './store/appStore';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
-  const { isAuthenticated, user, logout } = useAppStore();
-  const [logs, setLogs] = useState(() => generateLogs(200));
+  const { isAuthenticated, user, logout, realLogs } = useAppStore();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'logs' | 'settings'>('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  
+  // Use real logs from store
+  const logs = realLogs;
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 600);
@@ -65,7 +66,8 @@ function App() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
-      setLogs(generateLogs(200));
+      // Refresh is just a visual indicator now
+      // Real logs come from the store
       setIsRefreshing(false);
     }, 600);
   };
