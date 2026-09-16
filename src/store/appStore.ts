@@ -37,6 +37,22 @@ interface EmailLog {
   status: 'sent' | 'failed';
 }
 
+interface LogSource {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  type: 'api' | 'upload' | 'webhook';
+  apiKey: string;
+  enabled: boolean;
+  createdAt: string;
+  stats: {
+    logsToday: number;
+    sizeToday: string;
+    lastIngest?: string;
+  };
+}
+
 interface AppState {
   // Auth
   user: User | null;
@@ -61,6 +77,16 @@ interface AppState {
   emailLogs: EmailLog[];
   sendEmail: (to: string, subject: string) => Promise<boolean>;
   getEmailCount: (date: Date) => number;
+
+  // Log Sources
+  logSources: LogSource[];
+  addLogSource: (source: Omit<LogSource, 'id' | 'userId' | 'createdAt' | 'apiKey' | 'stats'>) => void;
+  deleteLogSource: (id: string) => void;
+  regenerateApiKey: (id: string) => void;
+
+  // Log Ingestion
+  ingestLogs: (logs: any[]) => void;
+  ingestionStats: { totalIngested: number; lastIngest?: string };
 
   // Rate Limiting
   apiCalls: { timestamp: number; endpoint: string }[];
@@ -216,6 +242,57 @@ export const useAppStore = create<AppState>()(
           logDate.setHours(0, 0, 0, 0);
           return logDate.getTime() === targetDate.getTime();
         }).length;
+      },
+
+      // Log Sources
+      logSources: [],
+
+      addLogSource: (source) => {
+        const { user } = get();
+        if (!user) return;
+
+        const newSource: LogSource = {
+          ...source,
+          id: `source_${Date.now()}`,
+          userId: user.id,
+          apiKey: `csk_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
+          enabled: true,
+          createdAt: new Date().toISOString(),
+          stats: {
+            logsToday: 0,
+            sizeToday: '0 B',
+          },
+        };
+
+        set(state => ({ logSources: [...state.logSources, newSource] }));
+      },
+
+      deleteLogSource: (id) => {
+        set(state => ({
+          logSources: state.logSources.filter(source => source.id !== id),
+        }));
+      },
+
+      regenerateApiKey: (id) => {
+        set(state => ({
+          logSources: state.logSources.map(source =>
+            source.id === id
+              ? { ...source, apiKey: `csk_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}` }
+              : source
+          ),
+        }));
+      },
+
+      // Log Ingestion
+      ingestionStats: { totalIngested: 0 },
+
+      ingestLogs: (logs) => {
+        set(state => ({
+          ingestionStats: {
+            totalIngested: state.ingestionStats.totalIngested + logs.length,
+            lastIngest: new Date().toISOString(),
+          },
+        }));
       },
 
       // Rate Limiting

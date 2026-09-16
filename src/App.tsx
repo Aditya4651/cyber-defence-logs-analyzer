@@ -8,6 +8,8 @@ import AuthScreen from './components/AuthScreen';
 import AlertRules from './components/AlertRules';
 import SavedSearches from './components/SavedSearches';
 import ServiceStatus from './components/ServiceStatus';
+import LogSources from './components/LogSources';
+import LogIngestion from './components/LogIngestion';
 import { generateLogs } from './data/sampleLogs';
 import { ThreatSummary } from './types';
 import { useAppStore } from './store/appStore';
@@ -225,10 +227,12 @@ function App() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <AlertRules />
-              <SavedSearches />
+              <LogIngestion />
+              <LogSources />
             </div>
             <div className="space-y-6">
+              <AlertRules />
+              <SavedSearches />
               <ServiceStatus />
               <div className="card p-6">
                 <h2 className="text-lg font-semibold text-[#ededed] mb-4">Account</h2>
