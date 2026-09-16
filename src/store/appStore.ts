@@ -42,16 +42,45 @@ interface LogSource {
   userId: string;
   name: string;
   description?: string;
-  type: 'api' | 'upload' | 'webhook';
+  type: LogSourceType;
+  category: LogSourceCategory;
   apiKey: string;
   enabled: boolean;
   createdAt: string;
+  config?: {
+    endpoint?: string;
+    port?: number;
+    protocol?: string;
+    format?: string;
+  };
   stats: {
     logsToday: number;
     sizeToday: string;
     lastIngest?: string;
   };
 }
+
+type LogSourceType =
+  | 'firewall'
+  | 'ids_ips'
+  | 'web_server'
+  | 'application'
+  | 'database'
+  | 'cloud'
+  | 'endpoint'
+  | 'network'
+  | 'email'
+  | 'vpn'
+  | 'authentication'
+  | 'custom';
+
+type LogSourceCategory =
+  | 'network'
+  | 'security'
+  | 'application'
+  | 'cloud'
+  | 'endpoint'
+  | 'infrastructure';
 
 interface AppState {
   // Auth
@@ -83,6 +112,7 @@ interface AppState {
   addLogSource: (source: Omit<LogSource, 'id' | 'userId' | 'createdAt' | 'apiKey' | 'stats'>) => void;
   deleteLogSource: (id: string) => void;
   regenerateApiKey: (id: string) => void;
+  updateLogSource: (id: string, updates: Partial<LogSource>) => void;
 
   // Log Ingestion
   ingestLogs: (logs: any[]) => void;
@@ -258,6 +288,7 @@ export const useAppStore = create<AppState>()(
           apiKey: `csk_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
           enabled: true,
           createdAt: new Date().toISOString(),
+          config: source.config || {},
           stats: {
             logsToday: 0,
             sizeToday: '0 B',
@@ -270,6 +301,14 @@ export const useAppStore = create<AppState>()(
       deleteLogSource: (id) => {
         set(state => ({
           logSources: state.logSources.filter(source => source.id !== id),
+        }));
+      },
+
+      updateLogSource: (id, updates) => {
+        set(state => ({
+          logSources: state.logSources.map(source =>
+            source.id === id ? { ...source, ...updates } : source
+          ),
         }));
       },
 
