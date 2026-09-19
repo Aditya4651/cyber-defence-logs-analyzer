@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+:root {
+  font-family: 'JetBrains Mono', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: linear-gradient(135deg, #0B0F19 0%, #0a0a0a 100%);
+  color: #ededed;
+  overflow-x: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* Cyberpunk neon effects */
+.neon-cyan {
+  color: #00F0FF;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.neon-magenta {
+  color: #FF003C;
+  text-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+}
+
+.glass-card {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.glow-magenta {
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+}
+
+/* Animated gradient border */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.gradient-border {
+  background: linear-gradient(90deg, #00F0FF, #FF003C, #00F0FF);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Slide-in animation for live feed */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Crosshair cursor for IP hover */
+.crosshair-cursor {
+  cursor: crosshair;
+}
+
+/* Scanning line animation */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.scan-line {
+  animation: scan 2s linear infinite;
+}
+
+.font-mono, code, [data-mono] {
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, monospace;
+  font-feature-settings: 'zero', 'ss01';
+}
+
+/* Scrollbar - minimal */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #262626; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #404040; }
+
+/* Selection */
+::selection {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fff;
+}
+
+/* Sticky table header */
+.sticky-header th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #141414;
+}
+
+/* Row hover */
+.log-row { transition: background-color 80ms ease-out; }
+.log-row:hover { background-color: #1a1a1a !important; }
+.log-row .row-actions { opacity: 0; transition: opacity 120ms ease-out; }
+.log-row:hover .row-actions { opacity: 1; }
+
+/* Context menu */
+.context-menu { animation: ctxFadeIn 120ms ease-out; }
+@keyframes ctxFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Filter chip */
+.filter-chip { animation: chipIn 150ms ease-out; }
+@keyframes chipIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Resize handle */
+.resize-handle {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 4px; cursor: col-resize; user-select: none;
+  transition: background-color 100ms;
+}
+.resize-handle:hover, .resize-handle.active { background-color: rgba(245, 158, 11, 0.5); }
+
+/* Select dropdown */
+select option { background-color: #141414; color: #ededed; }
+
+/* Keyboard hint */
+kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  background: #1a1a1a;
+  border: 1px solid #262626;
+  border-radius: 3px;
+  color: #737373;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 0%, #262626 50%, #1a1a1a 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Tab underline */
+.tab-active {
+  position: relative;
+  color: #ededed;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #ededed;
+}
+
+/* Chart labels */
+.chart-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a3a3a3;
+  font-weight: 500;
+}
+
+/* Subtle card */
+.card {
+  background: #141414;
+  border: 1px solid #262626;
+  border-radius: 8px;
+}
+
+/* Status dot */
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
