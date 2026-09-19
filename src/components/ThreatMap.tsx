@@ -30,6 +30,7 @@ const ThreatMap = React.memo(function ThreatMap({ logs }: ThreatMapProps) {
     severity: string;
     timestamp: number;
   }>>([]);
+  const [mapError, setMapError] = useState(false);
 
   // Memoize severity color function
   const getSeverityColor = useMemo(() => (severity: string) => {
@@ -93,6 +94,19 @@ const ThreatMap = React.memo(function ThreatMap({ logs }: ThreatMapProps) {
       </div>
 
       <div className="relative h-[400px]">
+        {mapError ? (
+          <div className="flex items-center justify-center h-full bg-[#0a0a0a] border border-[#262626] rounded">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-2">Map data unavailable</p>
+              <button 
+                onClick={() => setMapError(false)}
+                className="text-xs text-cyan-400 hover:text-cyan-300"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : (
         <ComposableMap
           projectionConfig={{
             scale: 147,
@@ -100,7 +114,10 @@ const ThreatMap = React.memo(function ThreatMap({ logs }: ThreatMapProps) {
           }}
           style={{ width: '100%', height: '100%' }}
         >
-          <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
+          <Geographies 
+            geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+            onError={() => setMapError(true)}
+          >
             {({ geographies }) =>
               geographies.map((geo) => (
                 <Geography
@@ -155,6 +172,7 @@ const ThreatMap = React.memo(function ThreatMap({ logs }: ThreatMapProps) {
             </Marker>
           ))}
         </ComposableMap>
+        )}
       </div>
 
       {/* Stats overlay */}

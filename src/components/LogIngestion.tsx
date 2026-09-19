@@ -109,13 +109,17 @@ export default function LogIngestion() {
           onClick={async () => {
             try {
               const response = await fetch('/sample-logs.json');
+              if (!response.ok) {
+                throw new Error('Failed to fetch sample data');
+              }
               const text = await response.text();
-              const { parseLogFile } = await import('../utils/logParser');
               const parsedLogs = parseLogFile(text);
               
               if (parsedLogs.length > 0) {
                 ingestLogs(parsedLogs);
                 toast.success(`✅ Loaded ${parsedLogs.length} sample logs!`);
+              } else {
+                toast.error('No valid logs found in sample data');
               }
             } catch (error) {
               console.error('Error loading sample data:', error);
