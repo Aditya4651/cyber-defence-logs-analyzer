@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
-import { useAppStore } from '../store/appStore';
 import { Upload, FileText, Clipboard, Code, Check, X, ChevronDown, Shield, Network, Globe, Server, Database, Cloud, Monitor, Activity, Mail, Lock, Key, Zap, HardDrive, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAppStore } from '../store/appStore';
 import { getLogSourceTypeById, LOG_SOURCE_CATEGORIES } from '../data/logSourceTypes';
 import { parseLogFile } from '../utils/logParser';
 
 export default function LogIngestion() {
-  const { logSources, ingestLogs } = useAppStore();
+  const { logSources, ingestLogs, realLogs } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'api'>('upload');
   const [selectedSource, setSelectedSource] = useState('');
   const [pasteContent, setPasteContent] = useState('');
@@ -98,12 +98,58 @@ export default function LogIngestion() {
 
   return (
     <div className="card p-6">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[#ededed] mb-1">Log Ingestion</h2>
-        <p className="text-[11px] text-[#525252]">
-          Upload files, paste logs, or use API to ingest logs · Stored in Axiom
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#ededed] mb-1">Log Ingestion</h2>
+          <p className="text-[11px] text-[#525252]">
+            Upload files, paste logs, or use API to ingest logs · Stored in Axiom
+          </p>
+        </div>
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/sample-logs.json');
+              const text = await response.text();
+              const { parseLogFile } = await import('../utils/logParser');
+              const parsedLogs = parseLogFile(text);
+              
+              if (parsedLogs.length > 0) {
+                ingestLogs(parsedLogs);
+                toast.success(`✅ Loaded ${parsedLogs.length} sample logs!`);
+              }
+            } catch (error) {
+              console.error('Error loading sample data:', error);
+              toast.error('Error loading sample data');
+            }
+          }}
+          className="px-3 py-1.5 text-[11px] text-cyan-400 border border-cyan-500/30 rounded hover:bg-cyan-500/10 transition-colors"
+        >
+          Load Sample Data
+        </button>
       </div>
+
+      {/* Current Stats */}
+      {realLogs.length > 0 && (
+        <div className="mb-4 p-3 bg-cyan-500/5 border border-cyan-500/20 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm text-cyan-400 font-medium">
+              {realLogs.length.toLocaleString()} logs loaded
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              if (confirm('Clear all logs?')) {
+                useAppStore.getState().clearLogs();
+                toast.success('All logs cleared');
+              }
+            }}
+            className="text-[11px] text-[#a3a3a3] hover:text-red-400 transition-colors"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
 
       {/* Source Selector */}
       <div className="mb-4">

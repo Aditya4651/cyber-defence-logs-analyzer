@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Terminal, RefreshCw, Download, Activity, Wifi, Settings, Command } from 'lucide-react';
+import { Terminal, RefreshCw, Download, Activity, Wifi, Settings, Command, X } from 'lucide-react';
 import StatsCards from './components/StatsCards';
 import ThreatCharts from './components/ThreatCharts';
 import ThreatMap from './components/ThreatMap';
@@ -73,6 +73,11 @@ function App() {
   };
 
   const handleExport = () => {
+    if (logs.length === 0) {
+      alert('No logs to export. Please upload some logs first.');
+      return;
+    }
+    
     const csv = [
       'ID,Timestamp,Source IP,Destination IP,Source Port,Dest Port,Protocol,Attack Type,Severity,Status,Description,Country,Firewall,Signature',
       ...logs.map(l => `${l.id},${l.timestamp},${l.sourceIP},${l.destinationIP},${l.sourcePort},${l.destinationPort},${l.protocol},${l.attackType},${l.severity},${l.status},"${l.description}",${l.country},${l.firewall},${l.signature}`)
@@ -84,6 +89,23 @@ function App() {
     a.download = `cybershield-logs-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleLoadSampleData = async () => {
+    try {
+      const response = await fetch('/sample-logs.json');
+      const text = await response.text();
+      const { parseLogFile } = await import('./utils/logParser');
+      const parsedLogs = parseLogFile(text);
+      
+      if (parsedLogs.length > 0) {
+        useAppStore.getState().ingestLogs(parsedLogs);
+        alert(`✅ Successfully loaded ${parsedLogs.length} sample logs!`);
+      }
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+      alert('Error loading sample data. Please try again.');
+    }
   };
 
   // Show auth screen if not authenticated
@@ -150,6 +172,13 @@ function App() {
                 <Wifi className="w-3 h-3 text-green-500" />
                 <span className="text-green-500">Protected</span>
               </span>
+              {logs.length > 0 && (
+                <span className="flex items-center gap-1.5 text-[#525252]">
+                  <Activity className="w-3 h-3 text-cyan-400" />
+                  <span className="text-cyan-400 font-mono tabular-nums">{logs.length.toLocaleString()}</span>
+                  <span>logs</span>
+                </span>
+              )}
               <span className="flex items-center gap-1.5 text-[#525252]">
                 <span className="w-1 h-1 bg-green-500 rounded-full"></span>
                 All systems nominal
@@ -173,12 +202,27 @@ function App() {
               <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </button>
+            {logs.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
+                    useAppStore.getState().clearLogs();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#a3a3a3] hover:text-red-400 border border-[#262626] rounded hover:border-red-500/30 transition-colors"
+                title="Clear all logs"
+              >
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            )}
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#a3a3a3] hover:text-[#ededed] border border-[#262626] rounded hover:border-[#404040] transition-colors"
+              disabled={logs.length === 0}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#a3a3a3] hover:text-[#ededed] border border-[#262626] rounded hover:border-[#404040] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Download className="w-3 h-3" />
-              Export
+              Export {logs.length > 0 && `(${logs.length})`}
             </button>
           </div>
         </div>
@@ -249,28 +293,78 @@ function App() {
           <>
             <StatsCards summary={summary} />
             
+            {/* Quick Actions - Show when no logs */}
+            {logs.length === 0 && (
+              <div className="card p-8 text-center">
+                <div className="max-w-2xl mx-auto">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                    <Activity className="w-8 h-8 text-cyan-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-[#ededed] mb-2">
+                    Welcome to CyberShield
+                  </h2>
+                  <p className="text-sm text-[#a3a3a3] mb-6">
+                    Start by uploading your log files or load sample data to explore the dashboard
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={handleLoadSampleData}
+                      className="px-6 py-2.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg text-sm font-medium hover:bg-cyan-500/20 transition-colors"
+                    >
+                      Load Sample Data
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('settings')}
+                      className="px-6 py-2.5 bg-[#1a1a1a] border border-[#262626] text-[#a3a3a3] rounded-lg text-sm font-medium hover:bg-[#262626] hover:text-[#ededed] transition-colors"
+                    >
+                      Upload Log Files
+                    </button>
+                  </div>
+                  <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                    <div className="p-4 bg-[#0a0a0a] rounded-lg border border-[#262626]">
+                      <div className="text-cyan-400 text-xs font-semibold mb-1">STEP 1</div>
+                      <div className="text-sm text-[#ededed] mb-1">Upload Logs</div>
+                      <div className="text-xs text-[#525252]">Upload JSON, Syslog, Apache, or CSV files</div>
+                    </div>
+                    <div className="p-4 bg-[#0a0a0a] rounded-lg border border-[#262626]">
+                      <div className="text-cyan-400 text-xs font-semibold mb-1">STEP 2</div>
+                      <div className="text-sm text-[#ededed] mb-1">Analyze Threats</div>
+                      <div className="text-xs text-[#525252]">View real-time threat map and analytics</div>
+                    </div>
+                    <div className="p-4 bg-[#0a0a0a] rounded-lg border border-[#262626]">
+                      <div className="text-cyan-400 text-xs font-semibold mb-1">STEP 3</div>
+                      <div className="text-sm text-[#ededed] mb-1">Explore & Export</div>
+                      <div className="text-xs text-[#525252]">Search, filter, and export your logs</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Cyber Command Center - Unique Dashboard */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Global Threat Map - Full width */}
-              <div className="col-span-12">
-                <ThreatMap logs={logs} />
-              </div>
+            {logs.length > 0 && (
+              <div className="grid grid-cols-12 gap-6">
+                {/* Global Threat Map - Full width */}
+                <div className="col-span-12">
+                  <ThreatMap logs={logs} />
+                </div>
 
-              {/* MITRE ATT&CK Matrix */}
-              <div className="col-span-12 lg:col-span-8">
-                <MITREMatrix logs={logs} />
-              </div>
+                {/* MITRE ATT&CK Matrix */}
+                <div className="col-span-12 lg:col-span-8">
+                  <MITREMatrix logs={logs} />
+                </div>
 
-              {/* Kill Chain Timeline */}
-              <div className="col-span-12 lg:col-span-4">
-                <KillChainTimeline logs={logs} />
-              </div>
+                {/* Kill Chain Timeline */}
+                <div className="col-span-12 lg:col-span-4">
+                  <KillChainTimeline logs={logs} />
+                </div>
 
-              {/* Original Charts - Still useful */}
-              <div className="col-span-12">
-                <ThreatCharts logs={logs} />
+                {/* Original Charts - Still useful */}
+                <div className="col-span-12">
+                  <ThreatCharts logs={logs} />
+                </div>
               </div>
-            </div>
+            )}
           </>
         ) : activeTab === 'logs' ? (
           <LogViewer logs={logs} />
